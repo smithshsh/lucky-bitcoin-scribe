@@ -1,6 +1,6 @@
 
 // Save data to a text file
-export const saveToFile = (address: string, balance: number, privateKey: string): void => {
+export const saveToFile = (address: string, balance: number, privateKey: string): boolean => {
   try {
     // Create the content to save
     const content = `Found Bitcoin Address with Balance!\n\nAddress: ${address}\nBalance: ${balance} BTC\nPrivate Key: ${privateKey}\nTimestamp: ${new Date().toISOString()}\n\n`;
