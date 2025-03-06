@@ -54,7 +54,7 @@ const Index = () => {
             Bitcoin Treasure Hunter
           </h1>
           <p className="text-muted-foreground max-w-md mx-auto">
-            Generating random Bitcoin private keys and checking if they contain any balance.
+            Generating random Bitcoin testnet addresses and checking if they contain any balance.
           </p>
         </header>
         
@@ -84,6 +84,10 @@ const Index = () => {
                 This application generates random Bitcoin private keys and checks if the corresponding 
                 public addresses have any balance. If a balance is found, the details are saved to a 
                 text file on your device.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                <strong>Note:</strong> For demonstration purposes, this app uses Bitcoin testnet addresses
+                instead of mainnet addresses. Testnet is a testing environment for Bitcoin development.
               </p>
               <p className="text-sm text-muted-foreground">
                 <strong>Important:</strong> The odds of finding a Bitcoin address with a balance 

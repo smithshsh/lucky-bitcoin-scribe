@@ -72,13 +72,13 @@ const AddressChecker: React.FC<AddressCheckerProps> = ({
     checkBalance();
   }, [address, isRunning, isChecking, privateKey]);
   
-  // Render a link to blockchain explorer
+  // Render a link to blockchain explorer for testnet addresses
   const renderAddressLink = () => {
     if (!address) return null;
     
     return (
       <a
-        href={`https://www.blockchain.com/explorer/addresses/btc/${address}`}
+        href={`https://www.blockchain.com/explorer/addresses/btc-testnet/${address}`}
         target="_blank"
         rel="noopener noreferrer"
         className="text-primary hover:underline text-xs flex items-center mt-1"
