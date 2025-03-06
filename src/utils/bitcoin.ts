@@ -26,7 +26,7 @@ const bytesToHex = (bytes: Uint8Array): string => {
 
 // SHA-256 hash
 const sha256 = (data: string): string => {
-  return CryptoJS.SHA256(data).toString();
+  return CryptoJS.SHA256(CryptoJS.enc.Hex.parse(data)).toString();
 };
 
 // Double SHA-256 hash
@@ -106,8 +106,8 @@ export const privateKeyToAddress = (privateKey: string): string => {
     // 1. Create a key pair from the private key
     const keyPair = ec.keyFromPrivate(privateKey, 'hex');
     
-    // 2. Get the public key (compressed format)
-    const publicKey = keyPair.getPublic(true, 'hex');
+    // 2. Get the public key (uncompressed format)
+    const publicKey = keyPair.getPublic(false, 'hex');
     
     // 3. Hash the public key with SHA-256
     const publicKeyHash = sha256(publicKey);
@@ -146,13 +146,19 @@ export const checkAddressBalance = async (address: string): Promise<number> => {
       return 0;
     }
     
+    // Validate the address format before making the API call
+    if (!address.match(/^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/)) {
+      console.error('Invalid Bitcoin address format:', address);
+      return 0;
+    }
+    
     // We'll use blockchain.info API for mainnet addresses
     const response = await fetch(`https://blockchain.info/balance?active=${address}`);
     
     if (!response.ok) {
       console.error('API response not OK:', await response.text());
       // Avoid rate limiting by waiting a bit before returning
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise(resolve => setTimeout(resolve, 500));
       return 0;
     }
     

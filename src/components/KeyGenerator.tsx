@@ -19,9 +19,11 @@ const KeyGenerator: React.FC<KeyGeneratorProps> = ({
 }) => {
   const [privateKey, setPrivateKey] = useState<string>('');
   const [keyAge, setKeyAge] = useState<number>(0);
+  const [isGenerating, setIsGenerating] = useState<boolean>(false);
   
   // Generate a new valid key and update state
   const generateNewKey = () => {
+    setIsGenerating(true);
     let key = generatePrivateKey();
     
     // Ensure the generated key is valid
@@ -33,6 +35,7 @@ const KeyGenerator: React.FC<KeyGeneratorProps> = ({
     setPrivateKey(key);
     onNewKey(key);
     setKeyAge(0);
+    setIsGenerating(false);
   };
   
   // Generate a key immediately on component mount
@@ -46,8 +49,9 @@ const KeyGenerator: React.FC<KeyGeneratorProps> = ({
     
     if (isRunning) {
       intervalId = window.setInterval(() => {
-        generateNewKey();
-        setKeyAge(0);
+        if (!isGenerating) {
+          generateNewKey();
+        }
       }, 300); // Generate a new key every 300ms
     }
     
@@ -56,7 +60,7 @@ const KeyGenerator: React.FC<KeyGeneratorProps> = ({
         clearInterval(intervalId);
       }
     };
-  }, [isRunning]);
+  }, [isRunning, isGenerating]);
   
   // Increment the key age counter
   useEffect(() => {
@@ -92,6 +96,7 @@ const KeyGenerator: React.FC<KeyGeneratorProps> = ({
             variant={isRunning ? "destructive" : "default"}
             onClick={onToggleRunning}
             className="transition-all duration-300"
+            disabled={isGenerating}
           >
             {isRunning ? (
               <span className="flex items-center">
@@ -106,9 +111,16 @@ const KeyGenerator: React.FC<KeyGeneratorProps> = ({
           <Button 
             variant="outline" 
             onClick={generateNewKey}
-            disabled={isRunning}
+            disabled={isRunning || isGenerating}
           >
-            Generate Once
+            {isGenerating ? (
+              <span className="flex items-center">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Generating...
+              </span>
+            ) : (
+              "Generate Once"
+            )}
           </Button>
         </div>
       </div>

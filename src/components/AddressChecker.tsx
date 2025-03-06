@@ -35,11 +35,23 @@ const AddressChecker: React.FC<AddressCheckerProps> = ({
     setIsValidKey(valid);
     
     if (valid) {
-      // Then derive the address
-      const derivedAddress = privateKeyToAddress(privateKey);
-      setAddress(derivedAddress);
-      setBalance(0);
-      setIsChecking(false);
+      try {
+        // Then derive the address
+        const derivedAddress = privateKeyToAddress(privateKey);
+        if (derivedAddress && derivedAddress.length > 25) {
+          setAddress(derivedAddress);
+          setBalance(0);
+          setIsChecking(false);
+        } else {
+          console.error('Generated address is invalid:', derivedAddress);
+          setAddress('');
+          setIsValidKey(false);
+        }
+      } catch (error) {
+        console.error('Error deriving address:', error);
+        setAddress('');
+        setIsValidKey(false);
+      }
     } else {
       // If invalid key, clear the address
       setAddress('');
@@ -51,6 +63,11 @@ const AddressChecker: React.FC<AddressCheckerProps> = ({
   useEffect(() => {
     const checkBalance = async () => {
       if (!address || !isRunning || isChecking || !isValidKey) return;
+      
+      if (!address.match(/^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/)) {
+        console.error('Invalid Bitcoin address format before checking balance:', address);
+        return;
+      }
       
       setIsChecking(true);
       onAddAttempt();
@@ -84,7 +101,7 @@ const AddressChecker: React.FC<AddressCheckerProps> = ({
   
   // Render a link to blockchain explorer for mainnet addresses
   const renderAddressLink = () => {
-    if (!address) return null;
+    if (!address || !address.match(/^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/)) return null;
     
     return (
       <a
@@ -104,7 +121,7 @@ const AddressChecker: React.FC<AddressCheckerProps> = ({
         <div className="flex justify-between items-center">
           <h2 className="text-lg font-semibold">Address Information</h2>
           <Badge variant={isChecking ? "outline" : "secondary"} className={isChecking ? "animate-pulse-subtle" : ""}>
-            {isChecking ? "Checking..." : isValidKey ? "Ready" : "Invalid Key"}
+            {isChecking ? "Checking..." : isValidKey && address ? "Ready" : "Invalid Key/Address"}
           </Badge>
         </div>
         
@@ -112,11 +129,11 @@ const AddressChecker: React.FC<AddressCheckerProps> = ({
           <Wallet className="h-5 w-5 text-muted-foreground" />
           <div className="flex-1">
             <div className="bg-secondary/50 rounded p-3 overflow-hidden">
-              {address ? (
+              {address && address.match(/^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/) ? (
                 <p className="crypto-text select-all break-all">{address}</p>
               ) : (
                 <p className="text-muted-foreground text-sm italic">
-                  {isValidKey ? "No address yet" : "Invalid private key, generating new one..."}
+                  {isValidKey ? "No valid address yet" : "Invalid private key or address, generating new one..."}
                 </p>
               )}
             </div>
