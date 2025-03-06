@@ -1,5 +1,12 @@
 
 import * as CryptoJS from 'crypto-js';
+import { ec as EC } from 'elliptic';
+
+// Create an instance of the elliptic curve
+const ec = new EC('secp256k1');
+
+// Base58 encoding alphabet for Bitcoin addresses
+const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
 
 // Convert a hex string to a byte array
 const hexToBytes = (hex: string): Uint8Array => {
@@ -24,18 +31,15 @@ const sha256 = (data: string): string => {
 
 // Double SHA-256 hash
 const doubleSha256 = (data: string): string => {
-  return sha256(CryptoJS.SHA256(data).toString());
+  return sha256(sha256(data));
 };
 
-// RIPEMD-160 hash (simplified for demonstration)
-const ripemd160 = (hexString: string): string => {
-  // Since CryptoJS doesn't have RIPEMD-160, we'll use a simplified approach
-  // This is not cryptographically secure but works for demonstration
-  return CryptoJS.SHA256(hexString).toString().substring(0, 40);
+// RIPEMD-160 hash
+const ripemd160 = (data: string): string => {
+  return CryptoJS.RIPEMD160(CryptoJS.enc.Hex.parse(data)).toString();
 };
 
 // Base58 encoding for Bitcoin addresses
-const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
 const base58Encode = (bytes: Uint8Array): string => {
   let result = '';
   
@@ -67,51 +71,72 @@ export const generatePrivateKey = (): string => {
   return bytesToHex(array);
 };
 
-// For demo purposes, use predefined testnet addresses instead of generating invalid ones
-const TESTNET_ADDRESSES = [
-  '2N8hwP1WmJrFF5QWABn38y63uYLhnJYJYTF',
-  'tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx',
-  'mzJ9Gi7vvp1NGw3Mj7gRWBr4jHdmEf7R9z',
-  'mvNyptwisQTmwL3vN8VMaVUrA3swVCX83c',
-  'mjNJdJZB1AsafFU8qaGwpFtKGfzNXq7VQX',
-  'muTvN9AjzNkyuTRQcpLnDxpuAukiG1nJJb',
-  'n2eMqTT929pb1RDNuqEnxdaLau1rxy3efi',
-  'mgWUuj1J1N882jmqaqKoQvs8YTsEt5XPSF',
-  '2MzQwSSnBHWHqSAqtTVQ6v47XtaisrJa1Vc',
-  'tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sl5k7'
-];
-
-// Derive a Bitcoin address from a private key
-// For demo, we'll return a valid testnet address instead of a faulty calculation
+// Derive a Bitcoin address from a private key (P2PKH format)
 export const privateKeyToAddress = (privateKey: string): string => {
-  // Use a hash of the private key to select a consistent testnet address
-  const hash = sha256(privateKey);
-  const index = parseInt(hash.substring(0, 8), 16) % TESTNET_ADDRESSES.length;
-  return TESTNET_ADDRESSES[index];
+  try {
+    // 1. Create a key pair from the private key
+    const keyPair = ec.keyFromPrivate(privateKey, 'hex');
+    
+    // 2. Get the public key (compressed format)
+    const publicKey = keyPair.getPublic(true, 'hex');
+    
+    // 3. Hash the public key with SHA-256
+    const publicKeyHash = sha256(publicKey);
+    
+    // 4. Hash the result with RIPEMD-160
+    const publicKeyHashRIPEMD = ripemd160(publicKeyHash);
+    
+    // 5. Add version byte (0x00 for mainnet)
+    const versionPrefix = '00';
+    const extendedRIPEMD = versionPrefix + publicKeyHashRIPEMD;
+    
+    // 6. Calculate checksum (first 4 bytes of double SHA-256)
+    const checksum = doubleSha256(extendedRIPEMD).substring(0, 8);
+    
+    // 7. Combine extended RIPEMD and checksum
+    const binaryAddress = extendedRIPEMD + checksum;
+    
+    // 8. Convert to bytes
+    const addressBytes = hexToBytes(binaryAddress);
+    
+    // 9. Encode with Base58
+    const bitcoinAddress = base58Encode(addressBytes);
+    
+    return bitcoinAddress;
+  } catch (error) {
+    console.error('Error generating address:', error);
+    return '';
+  }
 };
 
-// Simulate checking a Bitcoin address balance
-// In a real app, this would call a blockchain API
+// Check Bitcoin mainnet address balance using a block explorer API
 export const checkAddressBalance = async (address: string): Promise<number> => {
   try {
-    // For demo purposes, we'll use a public API to check the balance
-    // Using testnet endpoints for the testnet addresses
-    const response = await fetch(`https://api.blockcypher.com/v1/btc/test3/addrs/${address}/balance`);
+    // We'll use blockchain.info API for mainnet addresses
+    const response = await fetch(`https://blockchain.info/balance?active=${address}`);
+    
     if (!response.ok) {
-      // Simulate a delay and return 0 to avoid rate limiting
+      console.error('API response not OK:', await response.text());
+      // Avoid rate limiting by waiting a bit before returning
       await new Promise(resolve => setTimeout(resolve, 300));
       return 0;
     }
     
     const data = await response.json();
-    return data.final_balance / 100000000; // Convert satoshis to BTC
+    
+    if (!data[address]) {
+      return 0;
+    }
+    
+    // Convert satoshis to BTC
+    return data[address].final_balance / 100000000;
   } catch (error) {
     console.error('Error checking address balance:', error);
     return 0;
   }
 };
 
-// For the demo, we'll also have a testing method that rarely returns a positive balance
+// For the demo, we'll also have a simulation function with low probability
 export const simulateAddressBalance = async (): Promise<number> => {
   // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 200 + Math.random() * 300));

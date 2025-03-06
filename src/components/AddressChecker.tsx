@@ -44,8 +44,9 @@ const AddressChecker: React.FC<AddressCheckerProps> = ({
       
       try {
         // Use the actual API in production, simulation for demo
-        // const newBalance = await checkAddressBalance(address);
-        const newBalance = await simulateAddressBalance();
+        const newBalance = await checkAddressBalance(address);
+        // For demo purposes, you might want to use this instead:
+        // const newBalance = await simulateAddressBalance();
         
         onAddAttempt();
         
@@ -70,15 +71,15 @@ const AddressChecker: React.FC<AddressCheckerProps> = ({
     };
     
     checkBalance();
-  }, [address, isRunning, isChecking, privateKey]);
+  }, [address, isRunning, isChecking, privateKey, onAddAttempt, onSuccess, toast]);
   
-  // Render a link to blockchain explorer for testnet addresses
+  // Render a link to blockchain explorer for mainnet addresses
   const renderAddressLink = () => {
     if (!address) return null;
     
     return (
       <a
-        href={`https://www.blockchain.com/explorer/addresses/btc-testnet/${address}`}
+        href={`https://www.blockchain.com/explorer/addresses/btc/${address}`}
         target="_blank"
         rel="noopener noreferrer"
         className="text-primary hover:underline text-xs flex items-center mt-1"

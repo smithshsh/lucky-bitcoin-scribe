@@ -54,7 +54,7 @@ const Index = () => {
             Bitcoin Treasure Hunter
           </h1>
           <p className="text-muted-foreground max-w-md mx-auto">
-            Generating random Bitcoin testnet addresses and checking if they contain any balance.
+            Generating random Bitcoin addresses and checking if they contain any balance.
           </p>
         </header>
         
@@ -86,17 +86,17 @@ const Index = () => {
                 text file on your device.
               </p>
               <p className="text-sm text-muted-foreground">
-                <strong>Note:</strong> For demonstration purposes, this app uses Bitcoin testnet addresses
-                instead of mainnet addresses. Testnet is a testing environment for Bitcoin development.
+                <strong>Note:</strong> This app uses real Bitcoin mainnet addresses.
+                All cryptographic operations are performed in your browser.
               </p>
               <p className="text-sm text-muted-foreground">
                 <strong>Important:</strong> The odds of finding a Bitcoin address with a balance 
-                are astronomically low (less than 1 in 10^75). This is a demonstration 
-                application and includes a simulation mode.
+                are astronomically low (less than 1 in 10^75). This is primarily a demonstration 
+                application.
               </p>
               <p className="text-sm text-muted-foreground">
-                All cryptographic operations are performed in your browser. No private keys are 
-                transmitted over the internet.
+                No private keys are transmitted over the internet.
+                The app only queries public block explorers for balance information.
               </p>
             </div>
           </div>
