@@ -71,9 +71,38 @@ export const generatePrivateKey = (): string => {
   return bytesToHex(array);
 };
 
+// Validates if a private key is valid for Bitcoin
+export const isValidPrivateKey = (privateKey: string): boolean => {
+  try {
+    if (!privateKey || privateKey.length !== 64) {
+      return false;
+    }
+    
+    // Check if the key is a valid hex string
+    if (!/^[0-9a-fA-F]{64}$/.test(privateKey)) {
+      return false;
+    }
+    
+    // Check if the key is in the valid range for Bitcoin
+    const keyValue = BigInt(`0x${privateKey}`);
+    const maxKey = BigInt('0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364140');
+    
+    return keyValue > BigInt(0) && keyValue < maxKey;
+  } catch (error) {
+    console.error('Error validating private key:', error);
+    return false;
+  }
+};
+
 // Derive a Bitcoin address from a private key (P2PKH format)
 export const privateKeyToAddress = (privateKey: string): string => {
   try {
+    // Ensure the private key is valid first
+    if (!isValidPrivateKey(privateKey)) {
+      console.error('Invalid private key');
+      return '';
+    }
+    
     // 1. Create a key pair from the private key
     const keyPair = ec.keyFromPrivate(privateKey, 'hex');
     
@@ -112,6 +141,11 @@ export const privateKeyToAddress = (privateKey: string): string => {
 // Check Bitcoin mainnet address balance using a block explorer API
 export const checkAddressBalance = async (address: string): Promise<number> => {
   try {
+    if (!address) {
+      console.error('No address provided');
+      return 0;
+    }
+    
     // We'll use blockchain.info API for mainnet addresses
     const response = await fetch(`https://blockchain.info/balance?active=${address}`);
     

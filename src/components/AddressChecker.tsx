@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { privateKeyToAddress, checkAddressBalance, simulateAddressBalance } from '@/utils/bitcoin';
+import { privateKeyToAddress, checkAddressBalance, isValidPrivateKey } from '@/utils/bitcoin';
 import { saveToFile } from '@/utils/fileOperations';
 import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -23,32 +23,41 @@ const AddressChecker: React.FC<AddressCheckerProps> = ({
   const [address, setAddress] = useState<string>('');
   const [balance, setBalance] = useState<number>(0);
   const [isChecking, setIsChecking] = useState<boolean>(false);
+  const [isValidKey, setIsValidKey] = useState<boolean>(true);
   const { toast } = useToast();
   
-  // When the private key changes, derive the address
+  // When the private key changes, check if valid and derive the address
   useEffect(() => {
-    if (privateKey) {
+    if (!privateKey) return;
+    
+    // First check if the private key is valid
+    const valid = isValidPrivateKey(privateKey);
+    setIsValidKey(valid);
+    
+    if (valid) {
+      // Then derive the address
       const derivedAddress = privateKeyToAddress(privateKey);
       setAddress(derivedAddress);
       setBalance(0);
       setIsChecking(false);
+    } else {
+      // If invalid key, clear the address
+      setAddress('');
+      console.log('Invalid private key generated, will try a new one');
     }
   }, [privateKey]);
   
-  // Check the balance when needed
+  // Check the balance when we have a valid address
   useEffect(() => {
     const checkBalance = async () => {
-      if (!address || !isRunning || isChecking) return;
+      if (!address || !isRunning || isChecking || !isValidKey) return;
       
       setIsChecking(true);
+      onAddAttempt();
       
       try {
-        // Use the actual API in production, simulation for demo
+        // Only check balance if we have a valid address
         const newBalance = await checkAddressBalance(address);
-        // For demo purposes, you might want to use this instead:
-        // const newBalance = await simulateAddressBalance();
-        
-        onAddAttempt();
         
         setBalance(newBalance);
         
@@ -71,7 +80,7 @@ const AddressChecker: React.FC<AddressCheckerProps> = ({
     };
     
     checkBalance();
-  }, [address, isRunning, isChecking, privateKey, onAddAttempt, onSuccess, toast]);
+  }, [address, isRunning, isChecking, privateKey, isValidKey, onAddAttempt, onSuccess, toast]);
   
   // Render a link to blockchain explorer for mainnet addresses
   const renderAddressLink = () => {
@@ -95,7 +104,7 @@ const AddressChecker: React.FC<AddressCheckerProps> = ({
         <div className="flex justify-between items-center">
           <h2 className="text-lg font-semibold">Address Information</h2>
           <Badge variant={isChecking ? "outline" : "secondary"} className={isChecking ? "animate-pulse-subtle" : ""}>
-            {isChecking ? "Checking..." : "Ready"}
+            {isChecking ? "Checking..." : isValidKey ? "Ready" : "Invalid Key"}
           </Badge>
         </div>
         
@@ -103,7 +112,13 @@ const AddressChecker: React.FC<AddressCheckerProps> = ({
           <Wallet className="h-5 w-5 text-muted-foreground" />
           <div className="flex-1">
             <div className="bg-secondary/50 rounded p-3 overflow-hidden">
-              <p className="crypto-text select-all break-all">{address}</p>
+              {address ? (
+                <p className="crypto-text select-all break-all">{address}</p>
+              ) : (
+                <p className="text-muted-foreground text-sm italic">
+                  {isValidKey ? "No address yet" : "Invalid private key, generating new one..."}
+                </p>
+              )}
             </div>
             {renderAddressLink()}
           </div>

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { generatePrivateKey } from '@/utils/bitcoin';
+import { generatePrivateKey, isValidPrivateKey } from '@/utils/bitcoin';
 import { Loader2 } from 'lucide-react';
 
 interface KeyGeneratorProps {
@@ -20,9 +20,16 @@ const KeyGenerator: React.FC<KeyGeneratorProps> = ({
   const [privateKey, setPrivateKey] = useState<string>('');
   const [keyAge, setKeyAge] = useState<number>(0);
   
-  // Generate a new key and update state
+  // Generate a new valid key and update state
   const generateNewKey = () => {
-    const key = generatePrivateKey();
+    let key = generatePrivateKey();
+    
+    // Ensure the generated key is valid
+    while (!isValidPrivateKey(key)) {
+      console.log('Generated invalid key, trying again');
+      key = generatePrivateKey();
+    }
+    
     setPrivateKey(key);
     onNewKey(key);
     setKeyAge(0);

@@ -54,7 +54,7 @@ const Index = () => {
             Bitcoin Treasure Hunter
           </h1>
           <p className="text-muted-foreground max-w-md mx-auto">
-            Generating random Bitcoin addresses and checking if they contain any balance.
+            Generating random Bitcoin private keys and checking if their corresponding addresses contain any balance.
           </p>
         </header>
         
@@ -81,10 +81,15 @@ const Index = () => {
             <div className="space-y-2">
               <h3 className="font-medium">How this works</h3>
               <p className="text-sm text-muted-foreground">
-                This application generates random Bitcoin private keys and checks if the corresponding 
-                public addresses have any balance. If a balance is found, the details are saved to a 
-                text file on your device.
+                This application generates random Bitcoin private keys, derives their corresponding 
+                public addresses, and checks if the addresses have any balance. The workflow is:
               </p>
+              <ol className="text-sm text-muted-foreground list-decimal ml-5 space-y-1">
+                <li>Generate a random valid private key</li>
+                <li>Derive the Bitcoin address from the private key</li>
+                <li>Check if the address has any balance on the Bitcoin mainnet</li>
+                <li>If a balance is found, save the details to a file</li>
+              </ol>
               <p className="text-sm text-muted-foreground">
                 <strong>Note:</strong> This app uses real Bitcoin mainnet addresses.
                 All cryptographic operations are performed in your browser.
