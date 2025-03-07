@@ -14,6 +14,7 @@ interface Result {
 
 interface ResultDisplayProps {
   results: Result[];
+  showFakeResults?: boolean;
 }
 
 // Generate fake results for demonstration
@@ -72,9 +73,11 @@ const generateFakeResults = (): Result[] => {
 // Current approximate price of BTC in USD
 const BTC_USD_PRICE = 67000;
 
-const ResultDisplay: React.FC<ResultDisplayProps> = ({ results }) => {
-  // Combine real results with fake results
-  const combinedResults = [...results, ...generateFakeResults()];
+const ResultDisplay: React.FC<ResultDisplayProps> = ({ results, showFakeResults = false }) => {
+  // Combine real results with fake results if showFakeResults is true
+  const combinedResults = showFakeResults 
+    ? [...results, ...generateFakeResults()]
+    : results;
   
   if (combinedResults.length === 0) {
     return (

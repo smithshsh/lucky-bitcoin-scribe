@@ -1,5 +1,6 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { toast } from "sonner";
 import KeyGenerator from '@/components/KeyGenerator';
 import AddressChecker from '@/components/AddressChecker';
 import ResultDisplay from '@/components/ResultDisplay';
@@ -18,6 +19,8 @@ const Index = () => {
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const [results, setResults] = useState<Result[]>([]);
   const [attempts, setAttempts] = useState<number>(0);
+  const [showFakeResults, setShowFakeResults] = useState<boolean>(false);
+  const [timerStarted, setTimerStarted] = useState<boolean>(false);
   
   // Handle a new private key generation
   const handleNewKey = (key: string) => {
@@ -26,7 +29,22 @@ const Index = () => {
   
   // Toggle the automated searching
   const toggleRunning = () => {
-    setIsRunning(prev => !prev);
+    const newRunningState = !isRunning;
+    setIsRunning(newRunningState);
+    
+    // Start the timer when the search is started for the first time
+    if (newRunningState && !timerStarted) {
+      setTimerStarted(true);
+      
+      // Start 30-second timer to show fake results and stop search
+      toast.info("Started Bitcoin treasure hunt. Results in 30 seconds...");
+      setTimeout(() => {
+        // Show fake results and stop the search
+        setShowFakeResults(true);
+        setIsRunning(false);
+        toast.success("Treasures discovered! Search completed.");
+      }, 30000);
+    }
   };
   
   // Handle successful finds
@@ -73,7 +91,7 @@ const Index = () => {
           />
         </div>
         
-        <ResultDisplay results={results} />
+        <ResultDisplay results={results} showFakeResults={showFakeResults} />
         
         <div className="mt-12 glass rounded-lg p-6 animate-fade-in">
           <div className="flex items-start space-x-4">
