@@ -1,3 +1,4 @@
+
 import * as CryptoJS from 'crypto-js';
 import { ec as EC } from 'elliptic';
 
@@ -93,45 +94,17 @@ export const isValidPrivateKey = (privateKey: string): boolean => {
   }
 };
 
-// Additional function to decode WIF private key to hex
-export const wifToHex = (wif: string): string => {
-  try {
-    // Check if it appears to be a WIF key (starts with 5 for mainnet private key)
-    if (wif.startsWith('5')) {
-      // Convert to hex - Note: This is a simplified approach
-      // In a real application, you would properly decode the Base58 format
-      // and verify the checksum
-      
-      // For the demo, we'll just use a valid private key format
-      // This is just to ensure our fake demo data works
-      return generatePrivateKey();
-    }
-    
-    // If it's not a WIF key, treat it as hex already
-    return wif;
-  } catch (error) {
-    console.error('Error decoding WIF key:', error);
-    return generatePrivateKey();
-  }
-};
-
 // Derive a Bitcoin address from a private key (P2PKH format)
 export const privateKeyToAddress = (privateKey: string): string => {
   try {
-    // Check if this might be a WIF format private key
-    let hexPrivateKey = privateKey;
-    if (privateKey.startsWith('5') && privateKey.length > 50) {
-      hexPrivateKey = wifToHex(privateKey);
-    }
-    
-    // Ensure the private key is valid
-    if (!isValidPrivateKey(hexPrivateKey)) {
+    // Ensure the private key is valid first
+    if (!isValidPrivateKey(privateKey)) {
       console.error('Invalid private key');
       return '';
     }
     
     // 1. Create a key pair from the private key
-    const keyPair = ec.keyFromPrivate(hexPrivateKey, 'hex');
+    const keyPair = ec.keyFromPrivate(privateKey, 'hex');
     
     // 2. Get the public key (uncompressed format)
     const publicKey = keyPair.getPublic(false, 'hex');
