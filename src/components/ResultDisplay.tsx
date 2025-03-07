@@ -3,7 +3,6 @@ import React from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Clock, Coins, DollarSign } from 'lucide-react';
-import { privateKeyToAddress, isValidPrivateKey } from '@/utils/bitcoin';
 
 interface Result {
   address: string;
@@ -20,49 +19,40 @@ interface ResultDisplayProps {
 const generateFakeResults = (): Result[] => {
   const fakeResults: Result[] = [];
   
-  // Real Bitcoin private keys and their corresponding addresses (but with negligible/empty balances)
-  const privateKeysList = [
-    "5KHwxCT8Nrb3MSiQRS5h6fqmAJWLi1kUk5Zf3mLkqjmFRnzQoxq",
-    "5JLnVQFiQhbYSEBpCgL8NJ2qmrYpQUL3gRGtqgTuD8H5rQiNpJk",
-    "5J1NsxGvcfKqHUmQYDt1JRRkJHsdrk4MXZjtWkLiGQKY1tFdxvd",
-    "5HypNh1XLvmDnvnsfcCJxoqYcQpKzWEabKsVsDEXpR8YxDJrPAw",
-    "5JkQJmrW6QZbvXJY4MUGrAWPbpS3sFCFGdeBr9uXufdDPcjkLQT"
+  // Generate 3 fake results with balances > 0.7 BTC
+  const addresses = [
+    "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
+    "12cbQLTFMXRnSzktFkuoG3eHoMeFtpTu3S",
+    "1CK6KHY6MHgYvmRQ4PAafKYDrg1ejbH1cE"
   ];
   
-  // Create 3 random results
+  const privateKeys = [
+    "5Kb8kLf9zgWQnogidDA76MzPL6TsZZY36hWXMssSzNydYXYB9KF",
+    "5KJvsngHeMpm884wtkJNzQGaCErckhHJBGFsvd3VyK5qMZXj3hS",
+    "5HtasZ6ofTHP6HCwTqTkLDuLQisYPah7aUnSKfC7h4hMUVw2gi5"
+  ];
+  
+  // Create timestamps from the last 7 days
+  const now = new Date();
+  const timestamps = [
+    new Date(now.getTime() - 1000 * 60 * 60 * 24 * 2), // 2 days ago
+    new Date(now.getTime() - 1000 * 60 * 60 * 24 * 4), // 4 days ago
+    new Date(now.getTime() - 1000 * 60 * 60 * 24 * 6)  // 6 days ago
+  ];
+  
+  // Random balances between 0.7 and 3 BTC
+  const balances = [
+    0.7 + Math.random() * 2.3,
+    0.7 + Math.random() * 2.3,
+    0.7 + Math.random() * 2.3
+  ];
+  
   for (let i = 0; i < 3; i++) {
-    // Select a random private key from the list
-    const randomIndex = Math.floor(Math.random() * privateKeysList.length);
-    const privateKey = privateKeysList[randomIndex];
-    
-    // Derive the corresponding address
-    let address;
-    try {
-      // First convert the WIF private key to a hex private key if needed
-      // For simplicity we're just using a direct mapping since these are test keys
-      address = privateKeyToAddress(privateKey);
-      
-      // If address derivation fails, use a fallback valid address
-      if (!address) {
-        address = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"; // First Bitcoin address ever
-      }
-    } catch (error) {
-      console.error('Error deriving address:', error);
-      address = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"; // Fallback
-    }
-    
-    // Random balance between 0.7 and 3 BTC
-    const balance = 0.7 + Math.random() * 2.3;
-    
-    // Create timestamp from the last 7 days
-    const now = new Date();
-    const timestamp = new Date(now.getTime() - 1000 * 60 * 60 * 24 * Math.random() * 7);
-    
     fakeResults.push({
-      address,
-      balance,
-      privateKey,
-      timestamp
+      address: addresses[i],
+      balance: balances[i],
+      privateKey: privateKeys[i],
+      timestamp: timestamps[i]
     });
   }
   
