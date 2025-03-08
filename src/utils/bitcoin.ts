@@ -158,11 +158,17 @@ export const privateKeyToAddress = (wifPrivateKey: string): string => {
       return '';
     }
     
-    // Create a keyPair directly from the WIF format
-    // Instead of trying to decode the WIF, we'll use it directly with elliptic
-    const keyPair = ec.keyFromPrivate(wifPrivateKey);
+    // Get the private key in hex format
+    const privateKeyHex = wifToHex(wifPrivateKey);
+    if (!privateKeyHex) {
+      console.error('Failed to convert WIF to hex');
+      return '';
+    }
     
-    // Get the public key (uncompressed format)
+    // Create key pair from the hex private key
+    const keyPair = ec.keyFromPrivate(privateKeyHex, 'hex');
+    
+    // Get the public key (uncompressed format for Legacy addresses)
     const publicKey = keyPair.getPublic(false, 'hex');
     
     // Hash the public key with SHA-256
@@ -171,7 +177,7 @@ export const privateKeyToAddress = (wifPrivateKey: string): string => {
     // Hash the result with RIPEMD-160
     const publicKeyHashRIPEMD = ripemd160(publicKeyHash);
     
-    // Add version byte (0x00 for mainnet)
+    // Add version byte (0x00 for mainnet P2PKH)
     const versionPrefix = '00';
     const extendedRIPEMD = versionPrefix + publicKeyHashRIPEMD;
     
