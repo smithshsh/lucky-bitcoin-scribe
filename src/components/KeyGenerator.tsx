@@ -52,7 +52,7 @@ const KeyGenerator: React.FC<KeyGeneratorProps> = ({
         if (!isGenerating) {
           generateNewKey();
         }
-      }, 300); // Generate a new key every 300ms
+      }, 1000); // Generate a new key every 1000ms to allow time for address derivation
     }
     
     return () => {

@@ -64,6 +64,36 @@ const base58Encode = (bytes: Uint8Array): string => {
   return result;
 };
 
+// Base58 decoding
+const base58Decode = (str: string): Uint8Array => {
+  let result = BigInt(0);
+  let j = BigInt(1);
+  
+  // Convert from base58 string to integer
+  for (let i = str.length - 1; i >= 0; i--) {
+    const index = BASE58_ALPHABET.indexOf(str[i]);
+    if (index === -1) throw new Error('Invalid Base58 character');
+    result += BigInt(index) * j;
+    j *= BigInt(58);
+  }
+  
+  // Count leading '1's in the Base58 string (they represent leading zero bytes)
+  let leadingZeros = 0;
+  for (let i = 0; i < str.length && str[i] === '1'; i++) {
+    leadingZeros++;
+  }
+  
+  // Convert to byte array
+  const resultHex = result.toString(16).padStart((str.length - leadingZeros) * 2, '0');
+  const bytes = hexToBytes(resultHex);
+  
+  // Add leading zeros
+  const finalBytes = new Uint8Array(leadingZeros + bytes.length);
+  finalBytes.set(bytes, leadingZeros);
+  
+  return finalBytes;
+};
+
 // Generate a random private key in WIF format
 export const generatePrivateKey = (): string => {
   // Generate a random 32-byte private key
@@ -95,6 +125,49 @@ export const hexToWIF = (privateKeyHex: string): string => {
   return base58Encode(wifBytes);
 };
 
+// Decode WIF to hex private key
+const wifToHex = (wif: string): string => {
+  try {
+    if (!wif || !isValidPrivateKey(wif)) {
+      console.error('Invalid WIF format for decoding');
+      return '';
+    }
+    
+    // Decode the base58 string to bytes
+    const decoded = base58Decode(wif);
+    
+    // Convert decoded bytes to hex string
+    const decodedHex = bytesToHex(decoded);
+    
+    // Get the actual private key (without version byte and checksum)
+    // For uncompressed keys: Remove first byte (version) and last 4 bytes (checksum)
+    // For compressed keys: Remove first byte (version), last byte (compression flag), and last 4 bytes (checksum)
+    let privateKeyHex;
+    
+    // Check if key is compressed (length would be 38 bytes including version, compression flag, and checksum)
+    const isCompressed = decodedHex.length === 76; // 38 bytes * 2 = 76 hex chars
+    
+    if (isCompressed) {
+      // Remove first byte (version) and last 5 bytes (compression flag + checksum)
+      privateKeyHex = decodedHex.substring(2, 66);
+    } else {
+      // Remove first byte (version) and last 4 bytes (checksum)
+      privateKeyHex = decodedHex.substring(2, 66);
+    }
+    
+    // Validate result length (should be 32 bytes = 64 hex chars)
+    if (privateKeyHex.length !== 64) {
+      console.error('Extracted private key has invalid length:', privateKeyHex.length);
+      return '';
+    }
+    
+    return privateKeyHex;
+  } catch (error) {
+    console.error('Error decoding WIF to hex:', error);
+    return '';
+  }
+};
+
 // Validate a WIF private key
 export const isValidPrivateKey = (wif: string): boolean => {
   try {
@@ -108,44 +181,29 @@ export const isValidPrivateKey = (wif: string): boolean => {
       return false;
     }
     
-    // More complete validation would decode WIF and verify checksum
-    // But for our demo purposes, this basic validation is sufficient
+    // Decode the WIF key to check the checksum
+    try {
+      const decoded = base58Decode(wif);
+      const decodedHex = bytesToHex(decoded);
+      
+      // Extract the checksum from the decoded data
+      const extractedChecksum = decodedHex.slice(-8);
+      
+      // Calculate the checksum of the data without the checksum itself
+      const dataWithoutChecksum = decodedHex.slice(0, -8);
+      const calculatedChecksum = doubleSha256(dataWithoutChecksum).substring(0, 8);
+      
+      // Compare the extracted checksum with the calculated one
+      return extractedChecksum === calculatedChecksum;
+    } catch (e) {
+      console.error('Error validating checksum:', e);
+      return false;
+    }
     
     return true;
   } catch (error) {
     console.error('Error validating private key:', error);
     return false;
-  }
-};
-
-// Extract hex private key from WIF format (for internal use)
-const wifToHex = (wif: string): string => {
-  try {
-    // This is a simplification for demo purposes
-    // In a full implementation, we would properly decode the Base58 WIF format
-    
-    // For now, we'll just ensure we have a valid input for elliptic
-    if (!wif || typeof wif !== 'string') {
-      return '';
-    }
-    
-    try {
-      // Try to create a key pair directly from the WIF
-      const keyPair = ec.keyFromPrivate(wif, 'hex');
-      if (keyPair) {
-        return keyPair.getPrivate('hex').padStart(64, '0');
-      }
-    } catch (err) {
-      // If direct approach fails, we continue with our fallback
-      console.log('Direct WIF conversion failed, using fallback', err);
-    }
-    
-    // This is a fallback that won't actually work correctly in most cases
-    // but better than crashing the application
-    return wif.substring(0, 64).padStart(64, '0');
-  } catch (error) {
-    console.error('Error converting WIF to hex:', error);
-    return '';
   }
 };
 
@@ -165,11 +223,14 @@ export const privateKeyToAddress = (wifPrivateKey: string): string => {
       return '';
     }
     
+    console.log('Decoded private key hex:', privateKeyHex);
+    
     // Create key pair from the hex private key
     const keyPair = ec.keyFromPrivate(privateKeyHex, 'hex');
     
     // Get the public key (uncompressed format for Legacy addresses)
     const publicKey = keyPair.getPublic(false, 'hex');
+    console.log('Derived public key:', publicKey);
     
     // Hash the public key with SHA-256
     const publicKeyHash = sha256(publicKey);
@@ -192,6 +253,8 @@ export const privateKeyToAddress = (wifPrivateKey: string): string => {
     
     // Encode with Base58
     const bitcoinAddress = base58Encode(addressBytes);
+    
+    console.log('Generated Bitcoin address:', bitcoinAddress);
     
     return bitcoinAddress;
   } catch (error) {
