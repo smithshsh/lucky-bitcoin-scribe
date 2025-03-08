@@ -23,36 +23,47 @@ const KeyGenerator: React.FC<KeyGeneratorProps> = ({
   
   // Generate a new valid key and update state
   const generateNewKey = () => {
-    setIsGenerating(true);
-    let key = generatePrivateKey();
-    
-    // Ensure the generated key is valid
-    while (!isValidPrivateKey(key)) {
-      console.log('Generated invalid key, trying again');
-      key = generatePrivateKey();
+    try {
+      setIsGenerating(true);
+      let key = generatePrivateKey();
+      
+      // Ensure the generated key is valid
+      while (!isValidPrivateKey(key)) {
+        console.log('Generated invalid key, trying again');
+        key = generatePrivateKey();
+      }
+      
+      setPrivateKey(key);
+      onNewKey(key);
+      setKeyAge(0);
+    } catch (error) {
+      console.error('Error generating key:', error);
+    } finally {
+      setIsGenerating(false);
     }
-    
-    setPrivateKey(key);
-    onNewKey(key);
-    setKeyAge(0);
-    setIsGenerating(false);
   };
   
   // Generate a key immediately on component mount
   useEffect(() => {
-    generateNewKey();
+    const initialGeneration = async () => {
+      try {
+        await generateNewKey();
+      } catch (error) {
+        console.error('Error in initial key generation:', error);
+      }
+    };
+    
+    initialGeneration();
   }, []);
   
   // Set up an interval to automatically generate new keys when running
   useEffect(() => {
     let intervalId: number | undefined;
     
-    if (isRunning) {
+    if (isRunning && !isGenerating) {
       intervalId = window.setInterval(() => {
-        if (!isGenerating) {
-          generateNewKey();
-        }
-      }, 1000); // Generate a new key every 1000ms to allow time for address derivation
+        generateNewKey();
+      }, 3000); // Generate a new key every 3 seconds to allow time for address derivation
     }
     
     return () => {
@@ -88,7 +99,7 @@ const KeyGenerator: React.FC<KeyGeneratorProps> = ({
         </div>
         
         <div className="bg-secondary/50 rounded p-3 overflow-hidden">
-          <p className="crypto-text select-all break-all">{privateKey}</p>
+          <p className="crypto-text select-all break-all">{privateKey || 'Generating...'}</p>
         </div>
         
         <div className="flex justify-between items-center">
