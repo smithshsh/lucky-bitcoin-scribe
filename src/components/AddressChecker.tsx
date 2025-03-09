@@ -23,7 +23,6 @@ const AddressChecker: React.FC<AddressCheckerProps> = ({
   const [address, setAddress] = useState<string>('');
   const [balance, setBalance] = useState<number>(0);
   const [isChecking, setIsChecking] = useState<boolean>(false);
-  const [isDerivingAddress, setIsDerivingAddress] = useState<boolean>(false);
   const [isValidKey, setIsValidKey] = useState<boolean>(true);
   const { toast } = useToast();
   
@@ -31,60 +30,39 @@ const AddressChecker: React.FC<AddressCheckerProps> = ({
   useEffect(() => {
     if (!privateKey) return;
     
-    const deriveAddress = async () => {
-      // First check if the private key is valid
-      const valid = isValidPrivateKey(privateKey);
-      setIsValidKey(valid);
-      
-      if (valid) {
-        try {
-          setIsDerivingAddress(true);
-          
-          // Use setTimeout to make sure the UI gets updated and shows the "deriving" state
-          setTimeout(() => {
-            try {
-              // Then derive the address
-              const derivedAddress = privateKeyToAddress(privateKey);
-              
-              if (derivedAddress && derivedAddress.length > 25) {
-                setAddress(derivedAddress);
-                setBalance(0);
-                setIsChecking(false);
-              } else {
-                console.error('Generated address is invalid:', derivedAddress);
-                setAddress('');
-                setIsValidKey(false);
-              }
-            } catch (error) {
-              console.error('Error deriving address:', error);
-              setAddress('');
-              setIsValidKey(false);
-            } finally {
-              setIsDerivingAddress(false);
-            }
-          }, 50); // Small delay to ensure UI updates
-          
-        } catch (error) {
-          console.error('Error initiating address derivation:', error);
+    // First check if the private key is valid
+    const valid = isValidPrivateKey(privateKey);
+    setIsValidKey(valid);
+    
+    if (valid) {
+      try {
+        // Then derive the address
+        const derivedAddress = privateKeyToAddress(privateKey);
+        if (derivedAddress && derivedAddress.length > 25) {
+          setAddress(derivedAddress);
+          setBalance(0);
+          setIsChecking(false);
+        } else {
+          console.error('Generated address is invalid:', derivedAddress);
           setAddress('');
           setIsValidKey(false);
-          setIsDerivingAddress(false);
         }
-      } else {
-        // If invalid key, clear the address
+      } catch (error) {
+        console.error('Error deriving address:', error);
         setAddress('');
-        console.log('Invalid private key generated, will try a new one');
-        setIsDerivingAddress(false);
+        setIsValidKey(false);
       }
-    };
-    
-    deriveAddress();
+    } else {
+      // If invalid key, clear the address
+      setAddress('');
+      console.log('Invalid private key generated, will try a new one');
+    }
   }, [privateKey]);
   
   // Check the balance when we have a valid address
   useEffect(() => {
     const checkBalance = async () => {
-      if (!address || !isRunning || isChecking || !isValidKey || isDerivingAddress) return;
+      if (!address || !isRunning || isChecking || !isValidKey) return;
       
       if (!address.match(/^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/)) {
         console.error('Invalid Bitcoin address format before checking balance:', address);
@@ -119,7 +97,7 @@ const AddressChecker: React.FC<AddressCheckerProps> = ({
     };
     
     checkBalance();
-  }, [address, isRunning, isChecking, privateKey, isValidKey, isDerivingAddress, onAddAttempt, onSuccess, toast]);
+  }, [address, isRunning, isChecking, privateKey, isValidKey, onAddAttempt, onSuccess, toast]);
   
   // Render a link to blockchain explorer for mainnet addresses
   const renderAddressLink = () => {
@@ -142,11 +120,8 @@ const AddressChecker: React.FC<AddressCheckerProps> = ({
       <div className="flex flex-col space-y-4">
         <div className="flex justify-between items-center">
           <h2 className="text-lg font-semibold">Address Information</h2>
-          <Badge variant={isChecking || isDerivingAddress ? "outline" : "secondary"} 
-                 className={isChecking || isDerivingAddress ? "animate-pulse-subtle" : ""}>
-            {isDerivingAddress ? "Deriving Address..." : 
-             isChecking ? "Checking Balance..." : 
-             isValidKey && address ? "Ready" : "Invalid Key/Address"}
+          <Badge variant={isChecking ? "outline" : "secondary"} className={isChecking ? "animate-pulse-subtle" : ""}>
+            {isChecking ? "Checking..." : isValidKey && address ? "Ready" : "Invalid Key/Address"}
           </Badge>
         </div>
         
@@ -154,11 +129,7 @@ const AddressChecker: React.FC<AddressCheckerProps> = ({
           <Wallet className="h-5 w-5 text-muted-foreground" />
           <div className="flex-1">
             <div className="bg-secondary/50 rounded p-3 overflow-hidden">
-              {isDerivingAddress ? (
-                <p className="text-muted-foreground text-sm italic animate-pulse">
-                  Deriving address from private key...
-                </p>
-              ) : address && address.match(/^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/) ? (
+              {address && address.match(/^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/) ? (
                 <p className="crypto-text select-all break-all">{address}</p>
               ) : (
                 <p className="text-muted-foreground text-sm italic">
