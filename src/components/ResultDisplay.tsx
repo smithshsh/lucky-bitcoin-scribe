@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -21,8 +20,8 @@ interface ResultDisplayProps {
 const generateFakeResults = (): Result[] => {
   const fakeResults: Result[] = [];
   
-  // Real Bitcoin private keys and their corresponding addresses (but with negligible/empty balances)
-  const privateKeysList = [
+  // Real Bitcoin WIF private keys
+  const wifPrivateKeysList = [
     "5KHwxCT8Nrb3MSiQRS5h6fqmAJWLi1kUk5Zf3mLkqjmFRnzQoxq",
     "5JLnVQFiQhbYSEBpCgL8NJ2qmrYpQUL3gRGtqgTuD8H5rQiNpJk",
     "5J1NsxGvcfKqHUmQYDt1JRRkJHsdrk4MXZjtWkLiGQKY1tFdxvd",
@@ -32,15 +31,13 @@ const generateFakeResults = (): Result[] => {
   
   // Create 3 random results
   for (let i = 0; i < 3; i++) {
-    // Select a random private key from the list
-    const randomIndex = Math.floor(Math.random() * privateKeysList.length);
-    const privateKey = privateKeysList[randomIndex];
+    // Select a random WIF private key from the list
+    const randomIndex = Math.floor(Math.random() * wifPrivateKeysList.length);
+    const privateKey = wifPrivateKeysList[randomIndex];
     
     // Derive the corresponding address
     let address;
     try {
-      // First convert the WIF private key to a hex private key if needed
-      // For simplicity we're just using a direct mapping since these are test keys
       address = privateKeyToAddress(privateKey);
       
       // If address derivation fails, use a fallback valid address

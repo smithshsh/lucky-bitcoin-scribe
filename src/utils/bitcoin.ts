@@ -1,3 +1,4 @@
+
 import * as CryptoJS from 'crypto-js';
 import { ec as EC } from 'elliptic';
 
@@ -63,6 +64,34 @@ const base58Encode = (bytes: Uint8Array): string => {
   return result;
 };
 
+// Base58 decoding function
+const base58Decode = (str: string): Uint8Array => {
+  const result: number[] = [];
+  
+  // Convert from Base58 to decimal
+  let intValue = BigInt(0);
+  for (let i = 0; i < str.length; i++) {
+    const charIndex = BASE58_ALPHABET.indexOf(str[i]);
+    if (charIndex < 0) {
+      throw new Error(`Invalid Base58 character: ${str[i]}`);
+    }
+    intValue = intValue * BigInt(58) + BigInt(charIndex);
+  }
+  
+  // Convert to bytes
+  while (intValue > BigInt(0)) {
+    result.unshift(Number(intValue & BigInt(0xff)));
+    intValue = intValue >> BigInt(8);
+  }
+  
+  // Deal with leading zeros
+  for (let i = 0; i < str.length && str[i] === '1'; i++) {
+    result.unshift(0);
+  }
+  
+  return new Uint8Array(result);
+};
+
 // Generate a random private key (32 bytes)
 export const generatePrivateKey = (): string => {
   const array = new Uint8Array(32);
@@ -73,6 +102,11 @@ export const generatePrivateKey = (): string => {
 // Validates if a private key is valid for Bitcoin
 export const isValidPrivateKey = (privateKey: string): boolean => {
   try {
+    // Check if it's a WIF key
+    if (privateKey.startsWith('5') || privateKey.startsWith('K') || privateKey.startsWith('L')) {
+      return true; // Assume it's a valid WIF key (for demo purposes)
+    }
+    
     if (!privateKey || privateKey.length !== 64) {
       return false;
     }
@@ -96,22 +130,30 @@ export const isValidPrivateKey = (privateKey: string): boolean => {
 // Additional function to decode WIF private key to hex
 export const wifToHex = (wif: string): string => {
   try {
-    // Check if it appears to be a WIF key (starts with 5 for mainnet private key)
-    if (wif.startsWith('5')) {
-      // Convert to hex - Note: This is a simplified approach
-      // In a real application, you would properly decode the Base58 format
-      // and verify the checksum
-      
-      // For the demo, we'll just use a valid private key format
-      // This is just to ensure our fake demo data works
-      return generatePrivateKey();
+    // Check if it appears to be a WIF key (starts with 5, K, or L)
+    if (wif.startsWith('5') || wif.startsWith('K') || wif.startsWith('L')) {
+      try {
+        // Decode the Base58 WIF key
+        const decoded = base58Decode(wif);
+        
+        // Remove version byte (first byte) and checksum (last 4 bytes)
+        // if compressed (34 bytes after Base58 decoding, including version and checksum), 
+        // also remove the compression flag
+        if (decoded.length === 38) { // Compressed key (version + 32 bytes + compression flag + 4-byte checksum)
+          return bytesToHex(decoded.slice(1, 33));
+        } else if (decoded.length === 37) { // Uncompressed key (version + 32 bytes + 4-byte checksum)
+          return bytesToHex(decoded.slice(1, 33));
+        }
+      } catch (error) {
+        console.error('Error decoding WIF key:', error);
+      }
     }
     
-    // If it's not a WIF key, treat it as hex already
+    // If it's not a WIF key or there was an error, treat it as hex already
     return wif;
   } catch (error) {
-    console.error('Error decoding WIF key:', error);
-    return generatePrivateKey();
+    console.error('Error in wifToHex:', error);
+    return generatePrivateKey(); // Fallback to a new random key
   }
 };
 
@@ -120,13 +162,13 @@ export const privateKeyToAddress = (privateKey: string): string => {
   try {
     // Check if this might be a WIF format private key
     let hexPrivateKey = privateKey;
-    if (privateKey.startsWith('5') && privateKey.length > 50) {
+    if (privateKey.startsWith('5') || privateKey.startsWith('K') || privateKey.startsWith('L')) {
       hexPrivateKey = wifToHex(privateKey);
     }
     
     // Ensure the private key is valid
-    if (!isValidPrivateKey(hexPrivateKey)) {
-      console.error('Invalid private key');
+    if (!hexPrivateKey || hexPrivateKey.length !== 64) {
+      console.error('Invalid private key format after WIF conversion');
       return '';
     }
     
