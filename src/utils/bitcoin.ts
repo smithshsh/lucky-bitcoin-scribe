@@ -66,9 +66,33 @@ const base58Encode = (bytes: Uint8Array): string => {
 
 // Generate a random private key (32 bytes)
 export const generatePrivateKey = (): string => {
+  // Generate 32 bytes of random data
   const array = new Uint8Array(32);
   crypto.getRandomValues(array);
+  
+  // Convert to hex format for consistent handling
   return bytesToHex(array);
+};
+
+// Convert a private key to WIF format
+export const privateKeyToWIF = (privateKey: string): string => {
+  // Add version byte (0x80 for mainnet)
+  const versionedKey = '80' + privateKey;
+  
+  // Add compression byte (0x01)
+  const compressedKey = versionedKey + '01';
+  
+  // Calculate checksum (first 4 bytes of double SHA-256)
+  const checksum = doubleSha256(compressedKey).substring(0, 8);
+  
+  // Combine key and checksum
+  const keyWithChecksum = compressedKey + checksum;
+  
+  // Convert to bytes
+  const bytes = hexToBytes(keyWithChecksum);
+  
+  // Encode with Base58
+  return base58Encode(bytes);
 };
 
 // Validates if a private key is valid for Bitcoin
