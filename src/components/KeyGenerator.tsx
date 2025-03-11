@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { generatePrivateKey, isValidPrivateKey, privateKeyToWIF } from '@/utils/bitcoin';
+import { generatePrivateKey, isValidPrivateKey } from '@/utils/bitcoin';
 import { Loader2 } from 'lucide-react';
 
 interface KeyGeneratorProps {
@@ -18,7 +18,6 @@ const KeyGenerator: React.FC<KeyGeneratorProps> = ({
   attempts 
 }) => {
   const [privateKey, setPrivateKey] = useState<string>('');
-  const [privateKeyWIF, setPrivateKeyWIF] = useState<string>('');
   const [keyAge, setKeyAge] = useState<number>(0);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   
@@ -33,11 +32,7 @@ const KeyGenerator: React.FC<KeyGeneratorProps> = ({
       key = generatePrivateKey();
     }
     
-    // Convert to WIF format for display
-    const wifKey = privateKeyToWIF(key);
-    
     setPrivateKey(key);
-    setPrivateKeyWIF(wifKey);
     onNewKey(key);
     setKeyAge(0);
     setIsGenerating(false);
@@ -93,14 +88,7 @@ const KeyGenerator: React.FC<KeyGeneratorProps> = ({
         </div>
         
         <div className="bg-secondary/50 rounded p-3 overflow-hidden">
-          <div className="mb-1">
-            <span className="text-xs text-muted-foreground">WIF Format:</span>
-          </div>
-          <p className="crypto-text select-all break-all">{privateKeyWIF}</p>
-          <div className="mt-2 mb-1">
-            <span className="text-xs text-muted-foreground">Hex Format:</span>
-          </div>
-          <p className="crypto-text select-all break-all text-xs">{privateKey}</p>
+          <p className="crypto-text select-all break-all">{privateKey}</p>
         </div>
         
         <div className="flex justify-between items-center">
