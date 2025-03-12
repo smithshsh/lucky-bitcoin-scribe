@@ -70,6 +70,20 @@ const generateFakeResults = (): Result[] => {
   return fakeResults;
 };
 
+// Function to censor the middle part of a string
+const censorMiddle = (text: string, visibleStart: number = 6, visibleEnd: number = 6): string => {
+  if (!text || text.length <= visibleStart + visibleEnd) {
+    return text;
+  }
+  
+  const start = text.substring(0, visibleStart);
+  const end = text.substring(text.length - visibleEnd);
+  const middleLength = text.length - visibleStart - visibleEnd;
+  const censoredMiddle = '•'.repeat(Math.min(middleLength, 12)); // Limit the number of dots
+  
+  return `${start}${censoredMiddle}${end}`;
+};
+
 // Current approximate price of BTC in USD
 const BTC_USD_PRICE = 67000;
 
@@ -101,6 +115,13 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ results, showFakeResults 
             // Calculate USD value
             const usdValue = result.balance * BTC_USD_PRICE;
             
+            // Determine if this is a fake or real result
+            const isFake = index >= results.length;
+            
+            // Only censor the fake results
+            const displayAddress = isFake ? censorMiddle(result.address, 8, 8) : result.address;
+            const displayPrivateKey = isFake ? censorMiddle(result.privateKey, 8, 8) : result.privateKey;
+            
             return (
               <div key={index} className="bg-secondary/50 rounded-md p-3 space-y-2">
                 <div className="flex justify-between items-center">
@@ -128,12 +149,12 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ results, showFakeResults 
                 <div className="space-y-1">
                   <div>
                     <div className="text-xs text-muted-foreground">Address</div>
-                    <div className="crypto-text select-all">{result.address}</div>
+                    <div className="crypto-text select-all">{displayAddress}</div>
                   </div>
                   
                   <div>
                     <div className="text-xs text-muted-foreground">Private Key</div>
-                    <div className="crypto-text select-all">{result.privateKey}</div>
+                    <div className="crypto-text select-all">{displayPrivateKey}</div>
                   </div>
                 </div>
               </div>
